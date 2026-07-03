@@ -220,6 +220,94 @@ header h1 {
 .panel-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Search Box ── */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box svg {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-box input {
+  width: 240px;
+  height: 40px;
+  padding: 0 14px 0 40px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.search-box input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ── Bulk Actions ── */
+.bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bulk-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bulk-info input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.bulk-info label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.bulk-info span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.bulk-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.bulk-buttons button {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
 }
 
 /* ── Proxy Grid (replaces table) ── */
@@ -278,7 +366,15 @@ header h1 {
 .card-status {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.proxy-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  flex-shrink: 0;
 }
 
 .status-dot {

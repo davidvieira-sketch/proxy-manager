@@ -8,9 +8,14 @@ const myIp = document.getElementById("myIp");
 const overrideInput = document.getElementById("overrideIPModal");
 const overrideModal = document.getElementById("overrideModal");
 const ipCard = document.getElementById("ipCard");
+const searchInput = document.getElementById("searchInput");
+const bulkActions = document.getElementById("bulkActions");
+const selectAllCheckbox = document.getElementById("selectAll");
+const selectedCountSpan = document.getElementById("selectedCount");
 
 let localIP = "localhost";
 let overrideIP = "";
+let allProxies = [];
 
 function getDisplayIP() {
     return overrideIP || localIP;
@@ -26,21 +31,110 @@ async function load() {
         overrideInput.value = overrideIP;
     } catch {}
 
-    const proxies = await ProxyAPI.fetchProxies();
+    allProxies = await ProxyAPI.fetchProxies();
 
-    count.textContent = proxies.length;
-    enabledCount.textContent = proxies.filter(p => p.enabled !== false).length;
+    count.textContent = allProxies.length;
+    enabledCount.textContent = allProxies.filter(p => p.enabled !== false).length;
 
+    applySearchAndFilter();
+}
+
+// ── Search ──
+function handleSearch() {
+    applySearchAndFilter();
+}
+
+function applySearchAndFilter() {
+    const query = searchInput.value.toLowerCase().trim();
+    
     grid.innerHTML = "";
 
-    if (proxies.length === 0) {
+    const filtered = allProxies.filter(proxy => {
+        if (!query) return true;
+        const { domain } = ProxyUtils.parseTarget(proxy.target);
+        const name = (proxy.name || domain).toLowerCase();
+        const target = proxy.target.toLowerCase();
+        const port = String(proxy.port);
+        return name.includes(query) || target.includes(query) || port.includes(query);
+    });
+
+    if (filtered.length === 0) {
         grid.appendChild(ProxyCard.createEmpty());
+        bulkActions.style.display = "none";
         return;
     }
 
-    proxies.forEach(proxy => {
+    filtered.forEach(proxy => {
         grid.appendChild(ProxyCard.create(proxy, getDisplayIP()));
     });
+
+    updateBulkActions();
+}
+
+// ── Bulk Actions ──
+function handleCheckboxChange() {
+    updateBulkActions();
+}
+
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll(".proxy-checkbox");
+    const checked = document.querySelectorAll(".proxy-checkbox:checked");
+    
+    // Only show bulk actions when at least one proxy is selected
+    if (checked.length === 0) {
+        bulkActions.style.display = "none";
+        return;
+    }
+
+    bulkActions.style.display = "flex";
+    selectedCountSpan.textContent = `${checked.length} selected`;
+
+    // Update select all checkbox state
+    selectAllCheckbox.checked = checked.length === checkboxes.length;
+    selectAllCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+}
+
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll(".proxy-checkbox");
+    checkboxes.forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+    });
+    updateBulkActions();
+}
+
+async function bulkToggle() {
+    const checked = document.querySelectorAll(".proxy-checkbox:checked");
+    if (checked.length === 0) return;
+
+    const ports = Array.from(checked).map(cb => Number(cb.dataset.port));
+    
+    try {
+        await Promise.all(ports.map(port => ProxyAPI.toggleProxy(port)));
+        ProxyUtils.showToast(`Toggled ${ports.length} proxy${ports.length > 1 ? 'ies' : ''}`, "success");
+        load();
+    } catch {
+        ProxyUtils.showToast("Failed to toggle proxies", "error");
+    }
+}
+
+async function bulkDelete() {
+    const checked = document.querySelectorAll(".proxy-checkbox:checked");
+    if (checked.length === 0) return;
+
+    const ports = Array.from(checked).map(cb => Number(cb.dataset.port));
+    const count = ports.length;
+
+    if (!confirm(`Are you sure you want to delete ${count} proxy${count > 1 ? 'ies' : ''}? This action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        await Promise.all(ports.map(port => ProxyAPI.deleteProxy(port)));
+        ProxyUtils.showToast(`Deleted ${count} proxy${count > 1 ? 'ies' : ''}`, "success");
+        load();
+    } catch {
+        ProxyUtils.showToast("Failed to delete proxies", "error");
+    }
 }
 
 // ── Override ──
@@ -166,6 +260,11 @@ window.exportConfig = handleExport;
 window.importConfig = handleImport;
 window.refresh = refresh;
 window.closeOverrideModal = closeOverrideModal;
+window.handleSearch = handleSearch;
+window.handleCheckboxChange = handleCheckboxChange;
+window.toggleSelectAll = toggleSelectAll;
+window.bulkToggle = bulkToggle;
+window.bulkDelete = bulkDelete;
 
-return { load, openEditModal, openDeleteModal, refresh };
+return { load, openEditModal, openDeleteModal, refresh, handleSearch, handleCheckboxChange, toggleSelectAll, bulkToggle, bulkDelete };
 })();

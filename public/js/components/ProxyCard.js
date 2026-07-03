@@ -8,9 +8,13 @@ function create(proxy, displayIP) {
 
     const card = document.createElement("div");
     card.className = "proxy-card" + (enabled ? "" : " disabled");
+    card.dataset.port = proxy.port;
+    card.dataset.name = (proxy.name || domain).toLowerCase();
+    card.dataset.target = proxy.target.toLowerCase();
     card.innerHTML = `
         <div class="card-top">
             <div class="card-status">
+                <input type="checkbox" class="proxy-checkbox" data-port="${proxy.port}" onchange="ProxyApp.handleCheckboxChange()">
                 <span class="status-dot ${enabled ? "on" : "off"}"></span>
                 <span class="status-text">${enabled ? "Active" : "Inactive"}</span>
             </div>
