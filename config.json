@@ -1,9 +1,9 @@
 {
   "adminPort": 5006,
-  "overrideIP": "",
+  "overrideIP": "192.44",
   "proxies": [
     {
-      "port": 7648,
+      "port": 7653,
       "target": "http://localhost:3000",
       "enabled": true,
       "name": "hub"

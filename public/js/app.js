@@ -134,6 +134,15 @@ async function handleImport(event) {
     event.target.value = "";
 }
 
+// ── Init ──
+load();
+
+// ── Refresh ──
+async function refresh() {
+    await load();
+    ProxyUtils.showToast("Data refreshed", "success");
+}
+
 // Expose global functions for onclick handlers
 window.toggleOverride = toggleOverride;
 window.saveOverrideIP = saveOverrideIP;
@@ -146,10 +155,7 @@ window.closeDeleteModal = closeDeleteModal;
 window.confirmDelete = confirmDelete;
 window.exportConfig = handleExport;
 window.importConfig = handleImport;
+window.refresh = refresh;
 
-// ── Init ──
-load();
-setInterval(load, 5000);
-
-return { load, openEditModal, openDeleteModal };
+return { load, openEditModal, openDeleteModal, refresh };
 })();

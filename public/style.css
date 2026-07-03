@@ -669,6 +669,34 @@ button.edit-btn:hover {
   box-shadow: none;
 }
 
+/* ── Refresh Button ── */
+.refresh-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.refresh-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-light);
+  color: var(--text);
+  transform: none;
+  box-shadow: none;
+}
+
+.refresh-btn:active {
+  transform: scale(0.95);
+}
+
 .btn-row {
   display: flex;
   gap: 10px;
@@ -968,6 +996,7 @@ select option {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
+  justify-content: center;
 }
 
 .proto-btn {
@@ -982,7 +1011,7 @@ select option {
   text-transform: uppercase;
   letter-spacing: 0.3px;
   height: auto;
-  padding: 0;
+  padding: 0 24px;
   border-radius: 0;
   gap: 0;
 }
