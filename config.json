@@ -1,12 +1,12 @@
 {
   "adminPort": 5006,
-  "overrideIP": "localhost",
+  "overrideIP": "",
   "proxies": [
     {
-      "port": 1234,
-      "target": "https://www.google.pt",
+      "port": 7648,
+      "target": "http://localhost:3000",
       "enabled": true,
-      "name": "my"
+      "name": "hub"
     }
   ]
 }

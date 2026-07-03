@@ -22,9 +22,9 @@ async function load() {
         const info = await ProxyAPI.fetchInfo();
         localIP = info.ip;
         overrideIP = info.overrideIP || "";
-        myIp.textContent = localIP;
+        myIp.textContent = getDisplayIP();
         overrideInput.value = overrideIP;
-        overrideStatus.textContent = overrideIP ? "Using: " + overrideIP : "Using auto IP";
+        overrideStatus.textContent = overrideIP ? "Original IP: " + localIP : "Using auto IP";
     } catch {}
 
     const proxies = await ProxyAPI.fetchProxies();
