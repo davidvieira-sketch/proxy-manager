@@ -1,0 +1,13 @@
+{
+  "adminPort": 5006,
+  "overrideIP": "localhost",
+  "proxies": [
+    {
+      "port": 1234,
+      "target": "https://www.google.pt",
+      "enabled": true,
+      "name": "my",
+      "domainOverride": ""
+    }
+  ]
+}
