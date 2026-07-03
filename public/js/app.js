@@ -5,9 +5,9 @@ const grid = document.getElementById("proxyGrid");
 const count = document.getElementById("count");
 const enabledCount = document.getElementById("enabledCount");
 const myIp = document.getElementById("myIp");
-const overrideInput = document.getElementById("overrideIP");
-const overrideStatus = document.getElementById("overrideIPStatus");
-const overridePanel = document.getElementById("overridePanel");
+const overrideInput = document.getElementById("overrideIPModal");
+const overrideModal = document.getElementById("overrideModal");
+const ipCard = document.getElementById("ipCard");
 
 let localIP = "localhost";
 let overrideIP = "";
@@ -24,7 +24,6 @@ async function load() {
         overrideIP = info.overrideIP || "";
         myIp.textContent = getDisplayIP();
         overrideInput.value = overrideIP;
-        overrideStatus.textContent = overrideIP ? "Original IP: " + localIP : "Using auto IP";
     } catch {}
 
     const proxies = await ProxyAPI.fetchProxies();
@@ -46,15 +45,25 @@ async function load() {
 
 // ── Override ──
 function toggleOverride() {
-    overridePanel.classList.toggle("open");
+    overrideModal.style.display = "flex";
+    overrideInput.value = overrideIP;
 }
 
-async function saveOverrideIP() {
+function closeOverrideModal() {
+    overrideModal.style.display = "none";
+}
+
+// Close modal on overlay click
+overrideModal.addEventListener("click", function(e) {
+    if (e.target === overrideModal) closeOverrideModal();
+});
+
+async function saveOverrideIPFromModal() {
     const val = overrideInput.value.trim();
     try {
         const data = await ProxyAPI.saveOverrideIP(val);
         overrideIP = data.overrideIP;
-        overrideStatus.textContent = overrideIP ? "Using: " + overrideIP : "Using auto IP";
+        closeOverrideModal();
         ProxyUtils.showToast("Override IP updated", "success");
         load();
     } catch {
@@ -102,7 +111,7 @@ async function handleExport() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "proxy-config.json";
+        a.download = "config.json";
         a.click();
         URL.revokeObjectURL(url);
         ProxyUtils.showToast("Configuration exported", "success");
@@ -145,7 +154,7 @@ async function refresh() {
 
 // Expose global functions for onclick handlers
 window.toggleOverride = toggleOverride;
-window.saveOverrideIP = saveOverrideIP;
+window.saveOverrideIP = saveOverrideIPFromModal;
 window.openAddModal = openAddModal;
 window.openEditModal = openEditModal;
 window.openDeleteModal = openDeleteModal;
@@ -156,6 +165,7 @@ window.confirmDelete = confirmDelete;
 window.exportConfig = handleExport;
 window.importConfig = handleImport;
 window.refresh = refresh;
+window.closeOverrideModal = closeOverrideModal;
 
 return { load, openEditModal, openDeleteModal, refresh };
 })();

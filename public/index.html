@@ -41,14 +41,6 @@
             </div>
         </div>
 
-        <div class="ip-override" id="overridePanel">
-            <label>Override IP</label>
-            <div class="ip-override-row">
-                <input id="overrideIP" placeholder="Override IP (leave empty for auto)" value="">
-                <button onclick="saveOverrideIP()">Save</button>
-            </div>
-            <small id="overrideIPStatus"></small>
-        </div>
     </div>
 </header>
 
@@ -147,6 +139,29 @@
         <div class="modal-footer">
             <button class="btn-ghost" onclick="closeDeleteModal()">Cancel</button>
             <button class="btn-danger" onclick="confirmDelete()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Override IP Modal -->
+<div class="modal-overlay" id="overrideModal" style="display:none">
+    <div class="modal modal-sm" id="overrideModalContent">
+        <div class="modal-header">
+            <h2>Override Server IP</h2>
+            <button class="modal-close" onclick="closeOverrideModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Override IP Address</label>
+                <input id="overrideIPModal" placeholder="e.g., 192.168.1.100 (leave empty for auto)">
+                <small style="color: var(--text-muted); font-size: 12px; margin-top: 6px; display: block;">Leave empty to use the detected server IP automatically</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-ghost" onclick="closeOverrideModal()">Cancel</button>
+            <button class="btn-primary" onclick="saveOverrideIPFromModal()">Save</button>
         </div>
     </div>
 </div>
