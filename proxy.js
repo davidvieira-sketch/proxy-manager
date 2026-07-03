@@ -35,98 +35,17 @@ function stopAll() {
 function start(proxy) {
     if (proxy.enabled === false) return;
     const app = express();
-    
-    const targetUrl = new URL(proxy.target);
-    const originalOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
-    const proxyAddress = `http://${LOCAL_IP}:${proxy.port}`;
-    
-    const proxyOptions = {
-        target: proxy.target,
-        changeOrigin: true,  // This sets the Host header to the target domain
-        ws: true,
-        xfwd: true,
-        logLevel: "silent",
-        headers: {
-            'Host': targetUrl.host  // Explicitly set Host header to target domain
-        },
-        onProxyReq: (proxyReq, req, res) => {
-            // Ensure the Host header is set correctly (redundant but safe)
-            proxyReq.setHeader('Host', targetUrl.host);
-            
-            // Rewrite the Origin header to match the target domain
-            // This is important for CORS validation on the backend
-            if (req.headers.origin) {
-                const targetOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
-                proxyReq.setHeader('Origin', targetOrigin);
-            }
-            
-            // Rewrite the Referer header to match the target domain
-            // This is important for CSRF protection on the backend
-            if (req.headers.referer) {
-                const targetOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
-                const proxyOrigin = `${targetUrl.protocol}//${LOCAL_IP}:${proxy.port}`;
-                let referer = req.headers.referer;
-                // Replace proxy address with target address in referer
-                referer = referer.replace(proxyOrigin, targetOrigin);
-                referer = referer.replace(new RegExp(`${LOCAL_IP}:${proxy.port}`, 'g'), targetUrl.host);
-                proxyReq.setHeader('Referer', referer);
-            }
-            
-            // If domain override is set, also set it (for applications that check custom headers)
-            if (proxy.domainOverride) {
-                proxyReq.setHeader('X-Forwarded-Host', proxy.domainOverride);
-            }
-        },
-        onProxyRes: (proxyRes, req, res) => {
-            // Rewrite Location headers in redirects to point back to the proxy
-            if (proxyRes.headers.location) {
-                let location = proxyRes.headers.location;
-                
-                // Replace the entire original origin with the proxy address
-                // This ensures redirects go back to the proxy, not the original site
-                location = location.replace(originalOrigin, proxyAddress);
-                
-                // Also try to replace just the host if full origin didn't match
-                const originalHost = targetUrl.host;
-                location = location.replace(new RegExp(originalHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `${LOCAL_IP}:${proxy.port}`);
-                
-                proxyRes.headers.location = location;
-            }
-            
-            // Rewrite Content-Location header if present
-            if (proxyRes.headers['content-location']) {
-                let contentLocation = proxyRes.headers['content-location'];
-                contentLocation = contentLocation.replace(originalOrigin, proxyAddress);
-                const originalHost = targetUrl.host;
-                contentLocation = contentLocation.replace(new RegExp(originalHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `${LOCAL_IP}:${proxy.port}`);
-                proxyRes.headers['content-location'] = contentLocation;
-            }
-            
-            // Rewrite CORS headers to allow the proxy origin
-            const requestOrigin = req.headers.origin;
-            if (requestOrigin && proxyRes.headers['access-control-allow-origin']) {
-                // If the backend allows all origins (*), keep it
-                // Otherwise, add the request origin to the allowed origins
-                if (proxyRes.headers['access-control-allow-origin'] !== '*') {
-                    proxyRes.headers['access-control-allow-origin'] = requestOrigin;
-                }
-            }
-        }
-    };
-    
-    if (proxy.domainOverride) {
-        console.log(`Proxy ${proxy.port} -> ${proxy.target} (domain override: ${proxy.domainOverride})`);
-    } else {
-        console.log(`Proxy ${proxy.port} -> ${proxy.target}`);
-    }
-    
-    app.use(createProxyMiddleware(proxyOptions));
+    app.use(
+        createProxyMiddleware({
+            target: proxy.target,
+            changeOrigin: true,
+            ws: true,
+            xfwd: true,
+            logLevel: "silent"
+        })
+    );
     const server = app.listen(proxy.port, "0.0.0.0", () => {
-        if (proxy.domainOverride) {
-            console.log(`Proxy ${proxy.port} -> ${proxy.target} (override: ${proxy.domainOverride})`);
-        } else {
-            console.log(`Proxy ${proxy.port} -> ${proxy.target}`);
-        }
+        console.log(`Proxy ${proxy.port} -> ${proxy.target}`);
     });
     server.on("error", err => {
         console.error(`Failed to start proxy on port ${proxy.port}:`, err.message);
@@ -175,7 +94,7 @@ admin.post("/api/proxies", (req, res) => {
     if (config.proxies.some(p => p.port === port)) {
         return res.status(400).json({ error: "port already exists" });
     }
-    config.proxies.push({ port: Number(port), target, enabled: true, name: name || "", domainOverride: "" });
+    config.proxies.push({ port: Number(port), target, enabled: true, name: name || "" });
     fs.writeFileSync(cfgFile, JSON.stringify(config, null, 2));
     reload();
     res.json({ ok: true });
@@ -195,8 +114,7 @@ admin.put("/api/proxies/:port", (req, res) => {
         port: Number(port || oldPort),
         target: target || config.proxies[idx].target,
         enabled: enabled !== undefined ? enabled : config.proxies[idx].enabled,
-        name: name !== undefined ? name : config.proxies[idx].name,
-        domainOverride: req.body.domainOverride !== undefined ? req.body.domainOverride : (config.proxies[idx].domainOverride || "")
+        name: name !== undefined ? name : config.proxies[idx].name
     };
 
     fs.writeFileSync(cfgFile, JSON.stringify(config, null, 2));
@@ -257,13 +175,7 @@ admin.post("/api/proxies/import", (req, res) => {
     for (const p of data.proxies) {
         if (!p.port || !p.target) continue;
         if (!config.proxies.some(x => x.port === p.port)) {
-            config.proxies.push({ 
-                port: Number(p.port), 
-                target: p.target, 
-                enabled: p.enabled !== false,
-                name: p.name || "",
-                domainOverride: p.domainOverride || ""
-            });
+            config.proxies.push({ port: Number(p.port), target: p.target, enabled: p.enabled !== false });
         }
     }
     fs.writeFileSync(cfgFile, JSON.stringify(config, null, 2));

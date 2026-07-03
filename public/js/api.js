@@ -15,13 +15,8 @@ async function saveOverrideIP(val) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ overrideIP: val })
     });
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to save override IP");
-    }
-    const result = await res.json();
-    console.log("Override IP saved:", result);
-    return result;
+    if (!res.ok) throw new Error("Failed to save override IP");
+    return res.json();
 }
 
 async function addProxy(data) {
@@ -34,9 +29,7 @@ async function addProxy(data) {
         const err = await res.json();
         throw new Error(err.error || "Failed to add proxy");
     }
-    const result = await res.json();
-    console.log("Proxy added:", result);
-    return result;
+    return res.json();
 }
 
 async function updateProxy(port, data) {
@@ -49,19 +42,15 @@ async function updateProxy(port, data) {
         const err = await res.json();
         throw new Error(err.error || "Failed to update proxy");
     }
-    const result = await res.json();
-    console.log("Proxy updated:", result);
-    return result;
+    return res.json();
 }
 
 async function deleteProxy(port) {
     await fetch("/api/proxies/" + port, { method: "DELETE" });
-    console.log("Proxy " + port + " deleted");
 }
 
 async function toggleProxy(port) {
     await fetch("/api/proxies/" + port + "/toggle", { method: "PATCH" });
-    console.log("Proxy " + port + " toggled");
 }
 
 async function testTarget(target) {
@@ -71,20 +60,14 @@ async function testTarget(target) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ target })
         });
-        const result = await res.json();
-        console.log("Target test result:", result);
-        return result;
-    } catch (error) {
-        console.error("Target test failed:", error);
+        return await res.json();
+    } catch {
         return { ok: false, error: "Network error" };
     }
 }
 
 async function exportConfig() {
-    const res = await fetch("/api/proxies/export");
-    const result = await res.json();
-    console.log("Export config result:", result);
-    return result;
+    return fetch("/api/proxies/export").then(r => r.json());
 }
 
 async function importConfig(data) {
@@ -97,9 +80,7 @@ async function importConfig(data) {
         const err = await res.json();
         throw new Error(err.error || "Import failed");
     }
-    const result = await res.json();
-    console.log("Import config result:", result);
-    return result;
+    return res.json();
 }
 
 return { fetchInfo, fetchProxies, saveOverrideIP, addProxy, updateProxy, deleteProxy, toggleProxy, testTarget, exportConfig, importConfig };

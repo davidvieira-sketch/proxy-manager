@@ -436,22 +436,6 @@ header h1 {
   display: block;
 }
 
-.override-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  background: var(--warning-bg);
-  color: var(--warning-text);
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 6px;
-  margin-left: 8px;
-}
-
-.override-domain {
-  color: var(--warning-text) !important;
-}
-
 .card-details {
   display: flex;
   gap: 16px;
@@ -969,13 +953,6 @@ select option {
 
 .form-msg.ok {
   color: var(--success-text);
-}
-
-.form-hint {
-  display: block;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 4px;
 }
 
 .form-row {

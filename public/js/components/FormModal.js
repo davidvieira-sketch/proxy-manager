@@ -8,8 +8,6 @@ const portInput = document.getElementById("modalPort");
 const portMsg = document.getElementById("modalPortMsg");
 const domainInput = document.getElementById("modalDomain");
 const domainMsg = document.getElementById("modalDomainMsg");
-const domainOverrideInput = document.getElementById("modalDomainOverride");
-const domainOverrideMsg = document.getElementById("modalDomainOverrideMsg");
 const originalPort = document.getElementById("modalOriginalPort");
 const submitBtn = document.getElementById("modalSubmitBtn");
 const protoHttp = document.getElementById("protoHttp");
@@ -71,14 +69,11 @@ function openAdd() {
     nameInput.value = "";
     portInput.value = "";
     domainInput.value = "";
-    domainOverrideInput.value = "";
     originalPort.value = "";
     portMsg.textContent = "";
     domainMsg.textContent = "";
-    domainOverrideMsg.textContent = "";
     portInput.className = "";
     domainInput.className = "";
-    domainOverrideInput.className = "";
     setProtocol("https");
     modal.style.display = "flex";
     setTimeout(() => nameInput.focus(), 100);
@@ -92,14 +87,11 @@ function openEdit(proxy) {
     nameInput.value = proxy.name || "";
     portInput.value = proxy.port;
     domainInput.value = domain;
-    domainOverrideInput.value = proxy.domainOverride || "";
     originalPort.value = proxy.port;
     portMsg.textContent = "";
     domainMsg.textContent = "";
-    domainOverrideMsg.textContent = "";
     portInput.className = "";
     domainInput.className = "";
-    domainOverrideInput.className = "";
     setProtocol(proto);
     modal.style.display = "flex";
     setTimeout(() => nameInput.focus(), 100);
@@ -113,16 +105,13 @@ async function submit() {
     const name = nameInput.value.trim();
     const port = Number(portInput.value);
     const domain = domainInput.value.trim();
-    const domainOverride = domainOverrideInput.value.trim();
     const target = ProxyUtils.buildTarget(protocol, domain);
 
     // Validate
     portMsg.textContent = "";
     domainMsg.textContent = "";
-    domainOverrideMsg.textContent = "";
     portInput.className = "";
     domainInput.className = "";
-    domainOverrideInput.className = "";
 
     let valid = true;
 
@@ -140,17 +129,6 @@ async function submit() {
         domainMsg.textContent = "Valid domain";
         domainMsg.className = "form-msg ok";
         domainInput.className = "ok";
-    }
-
-    if (domainOverride && !ProxyUtils.validateDomain(domainOverride)) {
-        domainOverrideMsg.textContent = "Invalid domain";
-        domainOverrideMsg.className = "form-msg error";
-        domainOverrideInput.className = "error";
-        valid = false;
-    } else if (domainOverride) {
-        domainOverrideMsg.textContent = "Valid domain";
-        domainOverrideMsg.className = "form-msg ok";
-        domainOverrideInput.className = "ok";
     }
 
     if (!portInput.value || port < 1 || port > 65535) {
@@ -180,10 +158,10 @@ async function submit() {
 
     try {
         if (editingPort) {
-            await ProxyAPI.updateProxy(editingPort, { name, target, port, domainOverride });
+            await ProxyAPI.updateProxy(editingPort, { name, target, port });
             ProxyUtils.showToast("Proxy updated successfully", "success");
         } else {
-            await ProxyAPI.addProxy({ name, target, port, domainOverride });
+            await ProxyAPI.addProxy({ name, target, port });
             ProxyUtils.showToast("Proxy added successfully", "success");
         }
         close();

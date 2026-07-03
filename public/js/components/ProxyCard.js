@@ -5,7 +5,6 @@ function create(proxy, displayIP) {
     const { protocol, domain } = ProxyUtils.parseTarget(proxy.target);
     const enabled = proxy.enabled !== false;
     const protoBadge = `<span class="proto-badge ${protocol}">${protocol}</span>`;
-    const hasOverride = proxy.domainOverride && proxy.domainOverride.trim() !== "";
 
     const card = document.createElement("div");
     card.className = "proxy-card" + (enabled ? "" : " disabled");
@@ -24,7 +23,6 @@ function create(proxy, displayIP) {
             <div class="card-name">
                 <strong>${proxy.name || domain}</strong>
                 ${proxy.name ? `<span class="card-domain">${domain}</span>` : ""}
-                ${hasOverride ? `<span class="override-badge">Override: ${proxy.domainOverride}</span>` : ""}
             </div>
             <div class="card-details">
                 <div class="detail-item">
@@ -38,14 +36,6 @@ function create(proxy, displayIP) {
                         ${protoBadge}
                     </div>
                 </div>
-                ${hasOverride ? `
-                <div class="detail-item">
-                    <span class="detail-label">Domain Override</span>
-                    <div class="target-value">
-                        <span class="detail-value override-domain">${proxy.domainOverride}</span>
-                    </div>
-                </div>
-                ` : ""}
             </div>
             <a class="card-url" href="http://${displayIP}:${proxy.port}" target="_blank">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
