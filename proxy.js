@@ -36,40 +36,34 @@ function start(proxy) {
     if (proxy.enabled === false) return;
     const app = express();
     
+    const targetUrl = new URL(proxy.target);
+    const originalOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
+    const proxyAddress = `http://${LOCAL_IP}:${proxy.port}`;
+    
     const proxyOptions = {
         target: proxy.target,
         changeOrigin: true,
         ws: true,
         xfwd: true,
-        logLevel: "silent"
-    };
-    
-    // Add domain override functionality if domainOverride is set
-    if (proxy.domainOverride) {
-        const originalTarget = proxy.target;
-        const overrideDomain = proxy.domainOverride;
-        
-        proxyOptions.onProxyReq = (proxyReq, req, res) => {
-            // Rewrite the Host header to use the overridden domain
-            const url = new URL(originalTarget);
-            proxyReq.setHeader('Host', overrideDomain);
-            
-            // If there's a path in the original target, preserve it
-            if (url.pathname && url.pathname !== '/') {
-                const originalPath = req.url;
-                req.url = url.pathname + (originalPath === '/' ? '' : originalPath);
+        logLevel: "silent",
+        onProxyReq: (proxyReq, req, res) => {
+            // If domain override is set, rewrite the Host header
+            if (proxy.domainOverride) {
+                proxyReq.setHeader('Host', proxy.domainOverride);
             }
-        };
-        
-        proxyOptions.onProxyRes = (proxyRes, req, res) => {
-            // Rewrite Location headers in redirects
+        },
+        onProxyRes: (proxyRes, req, res) => {
+            // Rewrite Location headers in redirects to point back to the proxy
             if (proxyRes.headers.location) {
                 let location = proxyRes.headers.location;
                 
-                // Replace original domain with override domain in Location header
-                const originalDomain = new URL(originalTarget).host;
-                location = location.replace(new RegExp(originalDomain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), overrideDomain);
-                location = location.replace(new RegExp(originalDomain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/^https?:\/\//, ''), 'g'), overrideDomain);
+                // Replace the entire original origin with the proxy address
+                // This ensures redirects go back to the proxy, not the original site
+                location = location.replace(originalOrigin, proxyAddress);
+                
+                // Also try to replace just the host if full origin didn't match
+                const originalHost = targetUrl.host;
+                location = location.replace(new RegExp(originalHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `${LOCAL_IP}:${proxy.port}`);
                 
                 proxyRes.headers.location = location;
             }
@@ -77,13 +71,16 @@ function start(proxy) {
             // Rewrite Content-Location header if present
             if (proxyRes.headers['content-location']) {
                 let contentLocation = proxyRes.headers['content-location'];
-                const originalDomain = new URL(originalTarget).host;
-                contentLocation = contentLocation.replace(new RegExp(originalDomain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), overrideDomain);
+                contentLocation = contentLocation.replace(originalOrigin, proxyAddress);
+                const originalHost = targetUrl.host;
+                contentLocation = contentLocation.replace(new RegExp(originalHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `${LOCAL_IP}:${proxy.port}`);
                 proxyRes.headers['content-location'] = contentLocation;
             }
-        };
-        
-        console.log(`Proxy ${proxy.port} -> ${proxy.target} (domain override: ${overrideDomain})`);
+        }
+    };
+    
+    if (proxy.domainOverride) {
+        console.log(`Proxy ${proxy.port} -> ${proxy.target} (domain override: ${proxy.domainOverride})`);
     } else {
         console.log(`Proxy ${proxy.port} -> ${proxy.target}`);
     }
