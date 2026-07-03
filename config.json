@@ -5,7 +5,7 @@
     {
       "port": 7653,
       "target": "http://localhost:3000",
-      "enabled": false,
+      "enabled": true,
       "name": "hub"
     }
   ]

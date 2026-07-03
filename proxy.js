@@ -125,7 +125,11 @@ admin.put("/api/proxies/:port", (req, res) => {
 admin.patch("/api/proxies/:port/toggle", (req, res) => {
     const proxy = config.proxies.find(p => p.port == req.params.port);
     if (!proxy) return res.sendStatus(404);
-    proxy.enabled = !proxy.enabled;
+    const { enabled } = req.body;
+    if (enabled === undefined) {
+        return res.status(400).json({ error: "enabled status is required" });
+    }
+    proxy.enabled = Boolean(enabled);
     fs.writeFileSync(cfgFile, JSON.stringify(config, null, 2));
     reload();
     res.json(proxy);

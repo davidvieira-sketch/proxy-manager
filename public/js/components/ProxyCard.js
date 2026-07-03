@@ -18,10 +18,9 @@ function create(proxy, displayIP) {
                 <span class="status-dot ${enabled ? "on" : "off"}"></span>
                 <span class="status-text">${enabled ? "Active" : "Inactive"}</span>
             </div>
-            <label class="switch">
-                <input type="checkbox" ${enabled ? "checked" : ""} onchange="ProxyAPI.toggleProxy(${proxy.port}).then(() => ProxyApp.load())">
-                <span class="slider"></span>
-            </label>
+            <button class="toggle-btn ${enabled ? "active" : ""}" onclick="ProxyAPI.toggleProxy(${proxy.port}, ${!enabled}).then(() => ProxyApp.load())">
+                <span class="toggle-text">${enabled ? "ON" : "OFF"}</span>
+            </button>
         </div>
         <div class="card-body">
             <div class="card-name">

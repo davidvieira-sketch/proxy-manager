@@ -49,8 +49,12 @@ async function deleteProxy(port) {
     await fetch("/api/proxies/" + port, { method: "DELETE" });
 }
 
-async function toggleProxy(port) {
-    await fetch("/api/proxies/" + port + "/toggle", { method: "PATCH" });
+async function toggleProxy(port, enabled) {
+    await fetch("/api/proxies/" + port + "/toggle", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled })
+    });
 }
 
 async function testTarget(target) {
