@@ -42,14 +42,35 @@ function start(proxy) {
     
     const proxyOptions = {
         target: proxy.target,
-        changeOrigin: true,
+        changeOrigin: true,  // This sets the Host header to the target domain
         ws: true,
         xfwd: true,
         logLevel: "silent",
+        headers: {
+            'Host': targetUrl.host  // Explicitly set Host header to target domain
+        },
         onProxyReq: (proxyReq, req, res) => {
-            // Always rewrite the Host header to the target domain
-            // This ensures the backend application receives requests with the correct Host header
+            // Ensure the Host header is set correctly (redundant but safe)
             proxyReq.setHeader('Host', targetUrl.host);
+            
+            // Rewrite the Origin header to match the target domain
+            // This is important for CORS validation on the backend
+            if (req.headers.origin) {
+                const targetOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
+                proxyReq.setHeader('Origin', targetOrigin);
+            }
+            
+            // Rewrite the Referer header to match the target domain
+            // This is important for CSRF protection on the backend
+            if (req.headers.referer) {
+                const targetOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
+                const proxyOrigin = `${targetUrl.protocol}//${LOCAL_IP}:${proxy.port}`;
+                let referer = req.headers.referer;
+                // Replace proxy address with target address in referer
+                referer = referer.replace(proxyOrigin, targetOrigin);
+                referer = referer.replace(new RegExp(`${LOCAL_IP}:${proxy.port}`, 'g'), targetUrl.host);
+                proxyReq.setHeader('Referer', referer);
+            }
             
             // If domain override is set, also set it (for applications that check custom headers)
             if (proxy.domainOverride) {
@@ -79,6 +100,16 @@ function start(proxy) {
                 const originalHost = targetUrl.host;
                 contentLocation = contentLocation.replace(new RegExp(originalHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `${LOCAL_IP}:${proxy.port}`);
                 proxyRes.headers['content-location'] = contentLocation;
+            }
+            
+            // Rewrite CORS headers to allow the proxy origin
+            const requestOrigin = req.headers.origin;
+            if (requestOrigin && proxyRes.headers['access-control-allow-origin']) {
+                // If the backend allows all origins (*), keep it
+                // Otherwise, add the request origin to the allowed origins
+                if (proxyRes.headers['access-control-allow-origin'] !== '*') {
+                    proxyRes.headers['access-control-allow-origin'] = requestOrigin;
+                }
             }
         }
     };
