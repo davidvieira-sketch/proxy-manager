@@ -1,12 +1,19 @@
 {
   "adminPort": 5006,
-  "overrideIP": "localhost",
+  "overrideIP": "pixel-8.local",
   "proxies": [
     {
       "port": 1234,
       "target": "https://www.google.pt",
       "enabled": true,
       "name": "my",
+      "domainOverride": ""
+    },
+    {
+      "port": 2689,
+      "target": "https://sure.tailca7c24.ts.net",
+      "enabled": true,
+      "name": "sure.tailca7c24.ts.net",
       "domainOverride": ""
     }
   ]

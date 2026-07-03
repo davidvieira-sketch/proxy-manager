@@ -47,9 +47,13 @@ function start(proxy) {
         xfwd: true,
         logLevel: "silent",
         onProxyReq: (proxyReq, req, res) => {
-            // If domain override is set, rewrite the Host header
+            // Always rewrite the Host header to the target domain
+            // This ensures the backend application receives requests with the correct Host header
+            proxyReq.setHeader('Host', targetUrl.host);
+            
+            // If domain override is set, also set it (for applications that check custom headers)
             if (proxy.domainOverride) {
-                proxyReq.setHeader('Host', proxy.domainOverride);
+                proxyReq.setHeader('X-Forwarded-Host', proxy.domainOverride);
             }
         },
         onProxyRes: (proxyRes, req, res) => {
