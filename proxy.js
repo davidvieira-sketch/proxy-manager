@@ -3,6 +3,7 @@ const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const http = require("http");
 const https = require("https");
+const cors = require("cors");
 
 const cfgFile = __dirname + "/config.json";
 
@@ -36,6 +37,8 @@ function start(proxy) {
     if (proxy.enabled === false) return;
     const app = express();
 
+    app.use(cors());
+
     app.use(
         createProxyMiddleware({
             target: proxy.target,
@@ -45,13 +48,15 @@ function start(proxy) {
             logLevel: "silent"
         })
     );
-    
+
     const server = app.listen(proxy.port, "0.0.0.0", () => {
         console.log(`Proxy ${proxy.port} -> ${proxy.target}`);
     });
+
     server.on("error", err => {
         console.error(`Failed to start proxy on port ${proxy.port}:`, err.message);
     });
+
     servers.set(proxy.port, server);
 }
 
@@ -70,6 +75,7 @@ fs.watchFile(cfgFile, { interval: 1000 }, () => {
 });
 
 const admin = express();
+admin.use(cors());
 admin.use(express.json({ limit: "10mb" }));
 admin.use(express.static(__dirname + "/public"));
 
