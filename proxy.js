@@ -45,7 +45,11 @@ function start(proxy) {
             changeOrigin: true,
             ws: true,
             xfwd: true,
-            logLevel: "silent"
+            logLevel: "silent",
+            onProxyReq(proxyReq) {
+                proxyReq.removeHeader("origin");
+                proxyReq.removeHeader("referer");
+            }
         })
     );
 
