@@ -25,6 +25,10 @@ function create(proxy, displayIP) {
                 <a class="card-url" href="${protocol}://${displayIP}:${proxy.port}" target="_blank" title="${protocol}://${displayIP}:${proxy.port}">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </a>
+                <button class="btn-icon copy" title="Copy URL" onclick="event.stopPropagation(); ProxyCard.copyUrl('${protocol}://${displayIP}:${proxy.port}', this)">
+                    <svg class="icon-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    <svg class="icon-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+                </button>
             </div>
         </div>
         <div class="card-body">
@@ -48,6 +52,47 @@ function create(proxy, displayIP) {
     return card;
 }
 
+function copyUrl(url, btn) {
+    const done = () => {
+        if (btn) {
+            const copyIcon = btn.querySelector(".icon-copy");
+            const checkIcon = btn.querySelector(".icon-check");
+            if (copyIcon) copyIcon.style.display = "none";
+            if (checkIcon) checkIcon.style.display = "block";
+            btn.classList.add("copied");
+            setTimeout(() => {
+                if (copyIcon) copyIcon.style.display = "block";
+                if (checkIcon) checkIcon.style.display = "none";
+                btn.classList.remove("copied");
+            }, 1500);
+        }
+        ProxyUtils.showToast("URL copied to clipboard", "success");
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done).catch(() => fallbackCopy(url, done));
+    } else {
+        fallbackCopy(url, done);
+    }
+}
+
+function fallbackCopy(url, done) {
+    const ta = document.createElement("textarea");
+    ta.value = url;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand("copy");
+        done();
+    } catch {
+        ProxyUtils.showToast("Failed to copy URL", "error");
+    } finally {
+        document.body.removeChild(ta);
+    }
+}
+
 function createEmpty() {
     const div = document.createElement("div");
     div.className = "empty-state";
@@ -63,5 +108,5 @@ function createEmpty() {
     return div;
 }
 
-return { create, createEmpty };
+return { create, createEmpty, copyUrl };
 })();

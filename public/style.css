@@ -406,6 +406,16 @@ header h1 {
   color: var(--danger-text);
 }
 
+.btn-icon.copy:hover {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.btn-icon.copy.copied {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
 .card-status {
   display: flex;
   align-items: center;
