@@ -44,7 +44,7 @@
     </div>
 </header>
 
-<section class="panel">
+<section class="">
 
     <div class="panel-header">
         <h2>Configured Proxies</h2>
@@ -70,33 +70,28 @@
     </div>
     </div>
 
-    <div class="bulk-actions" id="bulkActions" style="display:none">
+
+    <div class="bulk-actions" id="bulkBar" style="display:none">
         <div class="bulk-info">
-            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-            <label for="selectAll">Select All</label>
-            <span id="selectedCount">0 selected</span>
+            <input type="checkbox" id="selectAllCheckbox" onchange="selectAll()">
+            <label for="selectAllCheckbox">Select all</label>
+            <span id="bulkCount">0 selected</span>
         </div>
         <div class="bulk-buttons">
-            <button class="secondary" onclick="bulkToggle()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                    <line x1="12" y1="2" x2="12" y2="12"/>
-                </svg>
-                Toggle Selected
-            </button>
-            <button class="danger" onclick="bulkDelete()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-                Delete Selected
-            </button>
+            <button class="secondary" onclick="deselectAll()">Deselect All</button>
+            <button class="secondary" onclick="enableAll()">All On</button>
+            <button class="secondary" onclick="disableAll()">All Off</button>
+            <button class="danger" onclick="deleteSelected()">Delete Selected</button>
         </div>
     </div>
 
     <div class="proxy-grid" id="proxyGrid"></div>
 
 </section>
+
+<footer class="footer">
+    <p>Developed by <a href="https://github.com/davidtvieira" target="_blank" rel="noopener noreferrer">David Vieira</a></p>
+</footer>
 
 </div>
 
@@ -120,19 +115,11 @@
                 <input id="modalName" placeholder="My Proxy" autofocus>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Port</label>
-                    <input id="modalPort" type="number" placeholder="8080" min="1" max="65535" class="">
-                    <span class="form-msg" id="modalPortMsg"></span>
-                </div>
-
-                <div class="form-group">
-                    <label>Protocol</label>
-                    <div class="protocol-toggle">
-                        <button class="proto-btn active http" id="protoHttp" onclick="setProtocol('http')">HTTP</button>
-                        <button class="proto-btn" id="protoHttps" onclick="setProtocol('https')">HTTPS</button>
-                    </div>
+            <div class="form-group">
+                <label>Protocol</label>
+                <div class="protocol-toggle">
+                    <button class="proto-btn active http" id="protoHttp" onclick="setProtocol('http')">HTTP</button>
+                    <button class="proto-btn" id="protoHttps" onclick="setProtocol('https')">HTTPS</button>
                 </div>
             </div>
 

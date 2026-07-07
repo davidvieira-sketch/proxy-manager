@@ -2,11 +2,11 @@
 window.ProxyAPI = (function() {
 
 async function fetchInfo() {
-    return fetch("/api/info").then(r => r.json());
+    return fetch("/api/info?_=" + Date.now()).then(r => r.json());
 }
 
 async function fetchProxies() {
-    return fetch("/api/proxies").then(r => r.json());
+    return fetch("/api/proxies?_=" + Date.now()).then(r => r.json());
 }
 
 async function saveOverrideIP(val) {
@@ -71,7 +71,7 @@ async function testTarget(target) {
 }
 
 async function exportConfig() {
-    return fetch("/api/proxies/export").then(r => r.json());
+    return fetch("/api/proxies/export?_=" + Date.now()).then(r => r.json());
 }
 
 async function importConfig(data) {

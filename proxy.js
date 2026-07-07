@@ -1,74 +1,22 @@
 const fs = require("fs");
 const express = require("express");
-const { createProxyMiddleware } = require("http-proxy-middleware");
 const http = require("http");
 const https = require("https");
 const cors = require("cors");
+const { getLocalIP, portGenerator } = require("./proxy/utils");
+const { createProxyManager } = require("./proxy/manager");
 
 const cfgFile = __dirname + "/config.json";
 
 let config = JSON.parse(fs.readFileSync(cfgFile, "utf8"));
-let servers = new Map();
-
-const os = require("os");
-
-function getLocalIP() {
-    const nets = os.networkInterfaces();
-    for (const name of Object.keys(nets)) {
-        for (const net of nets[name]) {
-            if (net.family === "IPv4" && !net.internal) {
-                return net.address;
-            }
-        }
-    }
-    return "localhost";
-}
-
 const LOCAL_IP = getLocalIP();
 
-function stopAll() {
-    for (const server of servers.values()) {
-        try { server.close(); } catch (e) {}
-    }
-    servers.clear();
-}
-
-function start(proxy) {
-    if (proxy.enabled === false) return;
-    const app = express();
-
-    app.use(cors());
-
-    app.use(
-        createProxyMiddleware({
-            target: proxy.target,
-            changeOrigin: true,
-            ws: true,
-            xfwd: true,
-            logLevel: "silent",
-            onProxyReq(proxyReq) {
-                proxyReq.removeHeader("origin");
-                proxyReq.removeHeader("referer");
-            }
-        })
-    );
-
-    const server = app.listen(proxy.port, "0.0.0.0", () => {
-        console.log(`Proxy ${proxy.port} -> ${proxy.target}`);
-    });
-
-    server.on("error", err => {
-        console.error(`Failed to start proxy on port ${proxy.port}:`, err.message);
-    });
-
-    servers.set(proxy.port, server);
-}
+const proxyManager = createProxyManager(config, cfgFile, (newConfig) => {
+    config = newConfig;
+});
 
 function reload() {
-    stopAll();
-    delete require.cache[require.resolve(cfgFile)];
-    config = JSON.parse(fs.readFileSync(cfgFile, "utf8"));
-    config.proxies.forEach(start);
+    config = proxyManager.reload();
 }
 
 reload();
@@ -84,6 +32,7 @@ admin.use(express.json({ limit: "10mb" }));
 admin.use(express.static(__dirname + "/public"));
 
 admin.get("/api/info", (req, res) => {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.json({ ip: LOCAL_IP, overrideIP: config.overrideIP || "" });
 });
 
@@ -95,35 +44,30 @@ admin.patch("/api/override-ip", (req, res) => {
 });
 
 admin.get("/api/proxies", (req, res) => {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.json(config.proxies);
 });
 
 admin.post("/api/proxies", (req, res) => {
-    const { port, target, name } = req.body;
-    if (!port || !target) {
-        return res.status(400).json({ error: "port and target are required" });
+    const { target, name } = req.body;
+    if (!target) {
+        return res.status(400).json({ error: "target is required" });
     }
-    if (config.proxies.some(p => p.port === port)) {
-        return res.status(400).json({ error: "port already exists" });
-    }
-    config.proxies.push({ port: Number(port), target, enabled: true, name: name || "" });
+    const port = portGenerator(config);
+    config.proxies.push({ port, target, enabled: true, name: name || "" });
     fs.writeFileSync(cfgFile, JSON.stringify(config, null, 2));
     reload();
-    res.json({ ok: true });
+    res.json({ ok: true, port });
 });
 
 admin.put("/api/proxies/:port", (req, res) => {
     const oldPort = Number(req.params.port);
-    const { port, target, enabled, name } = req.body;
+    const { target, enabled, name } = req.body;
     const idx = config.proxies.findIndex(p => p.port === oldPort);
     if (idx === -1) return res.sendStatus(404);
 
-    if (port && port !== oldPort && config.proxies.some(p => p.port === port)) {
-        return res.status(400).json({ error: "port already exists" });
-    }
-
     config.proxies[idx] = {
-        port: Number(port || oldPort),
+        port: oldPort,
         target: target || config.proxies[idx].target,
         enabled: enabled !== undefined ? enabled : config.proxies[idx].enabled,
         name: name !== undefined ? name : config.proxies[idx].name
@@ -180,6 +124,7 @@ admin.post("/api/proxies/test", (req, res) => {
 });
 
 admin.get("/api/proxies/export", (req, res) => {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.json(config);
 });
 
@@ -188,14 +133,20 @@ admin.post("/api/proxies/import", (req, res) => {
     if (!data || !Array.isArray(data.proxies)) {
         return res.status(400).json({ error: "Invalid format: expected { proxies: [...] }" });
     }
-    for (const p of data.proxies) {
-        if (!p.port || !p.target) continue;
-        if (!config.proxies.some(x => x.port === p.port)) {
-            config.proxies.push({ port: Number(p.port), target: p.target, enabled: p.enabled !== false });
-        }
-    }
+    const newProxies = data.proxies.map(p => ({
+        port: Number(p.port),
+        target: p.target,
+        enabled: p.enabled !== false,
+        name: p.name || ""
+    })).filter(p => p.port && p.target);
+    config.proxies = newProxies;
+    config.overrideIP = data.overrideIP || "";
     fs.writeFileSync(cfgFile, JSON.stringify(config, null, 2));
-    reload();
+    try {
+        reload();
+    } catch (e) {
+        console.error("Reload error:", e.message);
+    }
     res.json({ ok: true, count: config.proxies.length });
 });
 

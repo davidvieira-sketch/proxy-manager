@@ -4,11 +4,8 @@ window.FormModal = (function() {
 const modal = document.getElementById("formModal");
 const title = document.getElementById("formModalTitle");
 const nameInput = document.getElementById("modalName");
-const portInput = document.getElementById("modalPort");
-const portMsg = document.getElementById("modalPortMsg");
 const domainInput = document.getElementById("modalDomain");
 const domainMsg = document.getElementById("modalDomainMsg");
-const originalPort = document.getElementById("modalOriginalPort");
 const submitBtn = document.getElementById("modalSubmitBtn");
 const protoHttp = document.getElementById("protoHttp");
 const protoHttps = document.getElementById("protoHttps");
@@ -19,24 +16,6 @@ let editingPort = null;
 // Close on overlay click
 modal.addEventListener("click", function(e) {
     if (e.target === modal) close();
-});
-
-// Real-time validation
-portInput.addEventListener("input", function() {
-    const val = Number(this.value);
-    if (!this.value) {
-        portMsg.textContent = "";
-        portMsg.className = "form-msg";
-        portInput.className = "";
-    } else if (val >= 1 && val <= 65535) {
-        portMsg.textContent = "Valid port";
-        portMsg.className = "form-msg ok";
-        portInput.className = "ok";
-    } else {
-        portMsg.textContent = "Port must be 1-65535";
-        portMsg.className = "form-msg error";
-        portInput.className = "error";
-    }
 });
 
 domainInput.addEventListener("input", function() {
@@ -67,12 +46,8 @@ function openAdd() {
     title.textContent = "Add Proxy";
     submitBtn.textContent = "Add Proxy";
     nameInput.value = "";
-    portInput.value = "";
     domainInput.value = "";
-    originalPort.value = "";
-    portMsg.textContent = "";
     domainMsg.textContent = "";
-    portInput.className = "";
     domainInput.className = "";
     setProtocol("https");
     modal.style.display = "flex";
@@ -85,12 +60,8 @@ function openEdit(proxy) {
     title.textContent = "Edit Proxy";
     submitBtn.textContent = "Save Changes";
     nameInput.value = proxy.name || "";
-    portInput.value = proxy.port;
     domainInput.value = domain;
-    originalPort.value = proxy.port;
-    portMsg.textContent = "";
     domainMsg.textContent = "";
-    portInput.className = "";
     domainInput.className = "";
     setProtocol(proto);
     modal.style.display = "flex";
@@ -103,14 +74,11 @@ function close() {
 
 async function submit() {
     const name = nameInput.value.trim();
-    const port = Number(portInput.value);
     const domain = domainInput.value.trim();
     const target = ProxyUtils.buildTarget(protocol, domain);
 
     // Validate
-    portMsg.textContent = "";
     domainMsg.textContent = "";
-    portInput.className = "";
     domainInput.className = "";
 
     let valid = true;
@@ -131,17 +99,6 @@ async function submit() {
         domainInput.className = "ok";
     }
 
-    if (!portInput.value || port < 1 || port > 65535) {
-        portMsg.textContent = "Port must be 1-65535";
-        portMsg.className = "form-msg error";
-        portInput.className = "error";
-        valid = false;
-    } else {
-        portMsg.textContent = "Valid port";
-        portMsg.className = "form-msg ok";
-        portInput.className = "ok";
-    }
-
     if (!valid) return;
 
     // Test target
@@ -158,12 +115,14 @@ async function submit() {
 
     try {
         if (editingPort) {
-            await ProxyAPI.updateProxy(editingPort, { name, target, port });
+            await ProxyAPI.updateProxy(editingPort, { name, target });
             ProxyUtils.showToast("Proxy updated successfully", "success");
         } else {
-            await ProxyAPI.addProxy({ name, target, port });
+            await ProxyAPI.addProxy({ name, target });
             ProxyUtils.showToast("Proxy added successfully", "success");
         }
+        submitBtn.disabled = false;
+        submitBtn.textContent = editingPort ? "Save Changes" : "Add Proxy";
         close();
         ProxyApp.load();
     } catch (err) {

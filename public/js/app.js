@@ -9,16 +9,131 @@ const overrideInput = document.getElementById("overrideIPModal");
 const overrideModal = document.getElementById("overrideModal");
 const ipCard = document.getElementById("ipCard");
 const searchInput = document.getElementById("searchInput");
-const bulkActions = document.getElementById("bulkActions");
-const selectAllCheckbox = document.getElementById("selectAll");
-const selectedCountSpan = document.getElementById("selectedCount");
+const bulkBar = document.getElementById("bulkBar");
+const bulkCount = document.getElementById("bulkCount");
+const selectAllCheckbox = document.getElementById("selectAllCheckbox");
 
 let localIP = "localhost";
 let overrideIP = "";
 let allProxies = [];
+let selectedPorts = new Set();
 
 function getDisplayIP() {
     return overrideIP || localIP;
+}
+
+// ── Selection ──
+function toggleSelection(port) {
+    if (selectedPorts.has(port)) {
+        selectedPorts.delete(port);
+    } else {
+        selectedPorts.add(port);
+    }
+    updateBulkBar();
+    updateCardSelection();
+}
+
+function selectAll() {
+    const filtered = getFilteredProxies();
+    if (selectedPorts.size === filtered.length) {
+        selectedPorts.clear();
+    } else {
+        selectedPorts = new Set(filtered.map(p => p.port));
+    }
+    updateBulkBar();
+    updateCardSelection();
+}
+
+function deselectAll() {
+    selectedPorts.clear();
+    updateBulkBar();
+    updateCardSelection();
+}
+
+function deleteSelected() {
+    const ports = Array.from(selectedPorts);
+    if (ports.length === 0) return;
+    if (!confirm("Delete " + ports.length + " selected proxy" + (ports.length > 1 ? "ies" : "y") + "?")) return;
+    
+    Promise.all(ports.map(port => ProxyAPI.deleteProxy(port)))
+        .then(() => {
+            selectedPorts.clear();
+            ProxyUtils.showToast("Deleted " + ports.length + " proxy" + (ports.length > 1 ? "ies" : "y"), "info");
+            load();
+        })
+        .catch(() => {
+            ProxyUtils.showToast("Failed to delete some proxies", "error");
+            load();
+        });
+}
+
+function enableAll() {
+    const ports = Array.from(selectedPorts);
+    if (ports.length === 0) return;
+    Promise.all(ports.map(port => ProxyAPI.toggleProxy(port, true)))
+        .then(() => {
+            ProxyUtils.showToast("Enabled " + ports.length + " proxy" + (ports.length > 1 ? "ies" : "y"), "success");
+            load();
+        })
+        .catch(() => {
+            ProxyUtils.showToast("Failed to enable some proxies", "error");
+            load();
+        });
+}
+
+function disableAll() {
+    const ports = Array.from(selectedPorts);
+    if (ports.length === 0) return;
+    Promise.all(ports.map(port => ProxyAPI.toggleProxy(port, false)))
+        .then(() => {
+            ProxyUtils.showToast("Disabled " + ports.length + " proxy" + (ports.length > 1 ? "ies" : "y"), "info");
+            load();
+        })
+        .catch(() => {
+            ProxyUtils.showToast("Failed to disable some proxies", "error");
+            load();
+        });
+}
+
+function updateBulkBar() {
+    const count = selectedPorts.size;
+    if (count > 0) {
+        bulkBar.style.display = "flex";
+        bulkCount.textContent = count + " selected";
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+        const filtered = getFilteredProxies();
+        if (count === filtered.length) {
+            selectAllCheckbox.checked = true;
+        } else if (count > 0) {
+            selectAllCheckbox.indeterminate = true;
+        }
+    } else {
+        bulkBar.style.display = "none";
+    }
+}
+
+function updateCardSelection() {
+    document.querySelectorAll(".proxy-card").forEach(card => {
+        const port = parseInt(card.dataset.port);
+        if (selectedPorts.has(port)) {
+            card.classList.add("selected");
+        } else {
+            card.classList.remove("selected");
+        }
+    });
+}
+
+function getFilteredProxies() {
+    const query = searchInput.value.toLowerCase().trim();
+    return allProxies.filter(proxy => {
+        if (!query) return true;
+        const { domain } = ProxyUtils.parseTarget(proxy.target);
+        const name = (proxy.name || domain).toLowerCase();
+        const target = proxy.target.toLowerCase();
+        const port = String(proxy.port);
+        return name.includes(query) || target.includes(query) || port.includes(query);
+    });
 }
 
 // ── Load ──
@@ -49,18 +164,10 @@ function applySearchAndFilter() {
     
     grid.innerHTML = "";
 
-    const filtered = allProxies.filter(proxy => {
-        if (!query) return true;
-        const { domain } = ProxyUtils.parseTarget(proxy.target);
-        const name = (proxy.name || domain).toLowerCase();
-        const target = proxy.target.toLowerCase();
-        const port = String(proxy.port);
-        return name.includes(query) || target.includes(query) || port.includes(query);
-    });
+    const filtered = getFilteredProxies();
 
     if (filtered.length === 0) {
         grid.appendChild(ProxyCard.createEmpty());
-        bulkActions.style.display = "none";
         return;
     }
 
@@ -68,73 +175,8 @@ function applySearchAndFilter() {
         grid.appendChild(ProxyCard.create(proxy, getDisplayIP()));
     });
 
-    updateBulkActions();
-}
-
-// ── Bulk Actions ──
-function handleCheckboxChange() {
-    updateBulkActions();
-}
-
-function updateBulkActions() {
-    const checkboxes = document.querySelectorAll(".proxy-checkbox");
-    const checked = document.querySelectorAll(".proxy-checkbox:checked");
-    
-    // Only show bulk actions when at least one proxy is selected
-    if (checked.length === 0) {
-        bulkActions.style.display = "none";
-        return;
-    }
-
-    bulkActions.style.display = "flex";
-    selectedCountSpan.textContent = `${checked.length} selected`;
-
-    // Update select all checkbox state
-    selectAllCheckbox.checked = checked.length === checkboxes.length;
-    selectAllCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
-}
-
-function toggleSelectAll() {
-    const checkboxes = document.querySelectorAll(".proxy-checkbox");
-    checkboxes.forEach(cb => {
-        cb.checked = selectAllCheckbox.checked;
-    });
-    updateBulkActions();
-}
-
-async function bulkToggle() {
-    const checked = document.querySelectorAll(".proxy-checkbox:checked");
-    if (checked.length === 0) return;
-
-    const ports = Array.from(checked).map(cb => Number(cb.dataset.port));
-    
-    try {
-        await Promise.all(ports.map(port => ProxyAPI.toggleProxy(port)));
-        ProxyUtils.showToast(`Toggled ${ports.length} proxy${ports.length > 1 ? 'ies' : ''}`, "success");
-        load();
-    } catch {
-        ProxyUtils.showToast("Failed to toggle proxies", "error");
-    }
-}
-
-async function bulkDelete() {
-    const checked = document.querySelectorAll(".proxy-checkbox:checked");
-    if (checked.length === 0) return;
-
-    const ports = Array.from(checked).map(cb => Number(cb.dataset.port));
-    const count = ports.length;
-
-    if (!confirm(`Are you sure you want to delete ${count} proxy${count > 1 ? 'ies' : ''}? This action cannot be undone.`)) {
-        return;
-    }
-
-    try {
-        await Promise.all(ports.map(port => ProxyAPI.deleteProxy(port)));
-        ProxyUtils.showToast(`Deleted ${count} proxy${count > 1 ? 'ies' : ''}`, "success");
-        load();
-    } catch {
-        ProxyUtils.showToast("Failed to delete proxies", "error");
-    }
+    updateCardSelection();
+    updateBulkBar();
 }
 
 // ── Override ──
@@ -261,10 +303,11 @@ window.importConfig = handleImport;
 window.refresh = refresh;
 window.closeOverrideModal = closeOverrideModal;
 window.handleSearch = handleSearch;
-window.handleCheckboxChange = handleCheckboxChange;
-window.toggleSelectAll = toggleSelectAll;
-window.bulkToggle = bulkToggle;
-window.bulkDelete = bulkDelete;
+window.selectAll = selectAll;
+window.deselectAll = deselectAll;
+window.enableAll = enableAll;
+window.disableAll = disableAll;
+window.deleteSelected = deleteSelected;
 
-return { load, openEditModal, openDeleteModal, refresh, handleSearch, handleCheckboxChange, toggleSelectAll, bulkToggle, bulkDelete };
+return { load, openEditModal, openDeleteModal, refresh, handleSearch, toggleSelection };
 })();
