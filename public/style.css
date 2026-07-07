@@ -1204,6 +1204,39 @@ select option {
   .toolbar-right {
     margin-left: auto;
   }
+
+  /* Action buttons (Refresh, Add Proxy, Export, Import) */
+  .panel-actions {
+    width: 100%;
+  }
+
+  .panel-actions .search-box {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .panel-actions .search-box input {
+    width: 100%;
+  }
+
+  .panel-actions > button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* Bulk selection buttons (Deselect All, All On, All Off, Delete Selected) */
+  .bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulk-buttons {
+    flex-wrap: wrap;
+  }
+
+  .bulk-buttons button {
+    flex: 1 1 calc(50% - 4px);
+  }
 }
 
 @media (max-width: 640px) {
@@ -1267,6 +1300,39 @@ select option {
     bottom: 80px;
     min-width: 0;
     max-width: 100%;
+  }
+
+  /* Action buttons (Refresh, Add Proxy, Export, Import) */
+  .panel-actions {
+    width: 100%;
+  }
+
+  .panel-actions .search-box {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .panel-actions .search-box input {
+    width: 100%;
+  }
+
+  .panel-actions > button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* Bulk selection buttons (Deselect All, All On, All Off, Delete Selected) */
+  .bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulk-buttons {
+    flex-wrap: wrap;
+  }
+
+  .bulk-buttons button {
+    flex: 1 1 calc(50% - 4px);
   }
 }
 
