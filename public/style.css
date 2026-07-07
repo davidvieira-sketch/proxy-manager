@@ -6,9 +6,9 @@
   --surface-hover: #1f2a3d;
   --border: #2a3548;
   --border-light: #3a4860;
-  --primary: #ec5b2f;
-  --primary-hover: #e65555;
-  --primary-glow: rgba(241, 99, 99, 0.928);
+  --primary: #683add;
+  --primary-hover: #683add;
+  --primary-glow: rgba(63, 63, 63, 0.928);
   --success: #22c55e;
   --success-bg: rgba(34, 197, 94, 0.12);
   --success-text: #86efac;
@@ -36,6 +36,10 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 100%;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -43,6 +47,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
 }
 
 /* ── Container ── */
@@ -53,6 +58,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 /* ── Loading ── */
